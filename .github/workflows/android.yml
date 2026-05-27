@@ -16,11 +16,27 @@ jobs:
         cache: gradle
 
     - name: Build with Gradle
-      run: gradle assembleDebug
-      working-directory: svm-jaidevi-android
+      run: |
+        # Dynamically locate the folder containing settings.gradle and compile from there
+        PROJECT_DIR=$(find . -name "settings.gradle" -exec dirname {} \;)
+        echo "Successfully located Android project at: $PROJECT_DIR"
+        cd "$PROJECT_DIR"
+        gradle assembleDebug
+
+    - name: Locate and Copy APK
+      run: |
+        # Dynamically find the compiled APK and copy it to the root for uploading
+        APK_PATH=$(find . -name "app-debug.apk" | head -n 1)
+        if [ -f "$APK_PATH" ]; then
+          echo "Successfully located compiled APK at: $APK_PATH"
+          cp "$APK_PATH" ./app-debug.apk
+        else
+          echo "Error: Compiled APK not found!"
+          exit 1
+        fi
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: svm-jaidevi-app
-        path: svm-jaidevi-android/app/build/outputs/apk/debug/app-debug.apk
+        path: app-debug.apk
